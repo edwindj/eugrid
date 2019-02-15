@@ -1,0 +1,99 @@
+---
+title: "Eu 1km grid vs NL grid"
+author: "Edwin de Jonge"
+date: "2/15/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE
+)
+
+library(sf)
+library(raster)
+library(tmap)
+make_grid <- function(map, res=1000){
+  ext = extent(map)
+  ext[1] <- floor(ext[1]/res) * res
+  ext[2] <- ceiling(ext[2]/res) * res
+  ext[3] <- floor(ext[3]/res) * res
+  ext[4] <- ceiling(ext[4]/res) * res
+  raster(map, ext=ext, res = res)
+}
+
+CRS_NL <- st_crs(28992)
+CRS_EU <- st_crs(3035)
+
+gemeente_2017 <- 
+  st_read("http://cartomap.github.io/nl/wgs84/gemeente_2017.geojson") %>% # for different year change this
+  st_transform(CRS_NL) # into 
+
+dord <-
+  gemeente_2017 %>% 
+  dplyr::filter(statnaam %in% c("Dordrecht"))
+
+# empty grid
+grid_rd <- make_grid(dord, 1000)
+
+# include environment of dord 
+dord_eo <- st_crop(gemeente_2017, extent(grid_rd))
+
+# chop map into 1km pieces
+dord_rd <- rasterize(dord_eo, grid_rd)
+
+# and transform the pieces back into a polygon file
+dord_gridded_rd <- 
+  rasterToPolygons(dord_rd) %>% 
+  st_as_sf()
+
+dord_rdgrid_eu <-st_transform(dord_gridded_rd, CRS_EU)
+
+gemeente_eu <- gemeente_2017 %>% st_transform(CRS_EU) 
+
+dord_eu <-
+  gemeente_eu %>% 
+  dplyr::filter(statnaam %in% c("Dordrecht"))
+
+grid_eu <- make_grid(dord_eu, 1000)
+dord_eu <- st_crop(gemeente_eu, extent(grid_eu)) %>% dplyr::mutate(statcode = droplevels(statcode))
+g_dord_eu <- rasterize(dord_eu, grid_eu)
+
+dord_eugrid_eu <- 
+  rasterToPolygons(g_dord_eu) %>% 
+  st_as_sf()
+
+```
+
+# EU-grid vs NL-grid
+
+The NL-grid en EU-grid differ in the following aspects: 
+- they use a different projecten (Rijksdriehoekstelsel (28892) vs Lambert Equal Area (3035))
+- the 1km grid origins are aligned in the original projection, so that the boundaries of the grid cells also have nice rounded coordinates.
+
+Lets look at a small piece of the Netherlands in the EU projection:
+
+```{r}
+background <- tm_shape(dord_eu) + tm_fill("lightgray") + 
+  tm_borders("white", alpha=0.8) +
+  tm_text("statnaam", alpha=0.5, size=0.7)
+
+print(background)
+```
+
+```{r, fig.cap="EU 1km grid"}
+background + tm_shape(dord_eugrid_eu) + tm_borders("gray")
+```
+
+When the NL grid is reprojected in the EU projection, one readily sees that the grids are not nicely aligned.
+
+```{r, fig.cap="NL 1km grid in EU projection"}
+background + tm_shape(dord_rdgrid_eu) + tm_borders("gray")
+```
+
+
+```{r, fig.cap="EU 1km grid (blue) vs NL 1km grid (red) in EU projection"}
+background + 
+  tm_shape(dord_eugrid_eu) + tm_borders("blue") +
+  tm_shape(dord_rdgrid_eu) + tm_borders("red")
+```
