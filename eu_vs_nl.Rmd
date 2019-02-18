@@ -68,7 +68,8 @@ dord_eugrid_eu <-
 # EU-grid vs NL-grid
 
 The NL-grid en EU-grid differ in the following aspects: 
-- they use a different projecten (Rijksdriehoekstelsel (28892) vs Lambert Equal Area (3035))
+
+- they use a different projection (Rijksdriehoekstelsel (28892) vs Lambert Equal Area (3035))
 - the 1km grid origins are aligned in the original projection, so that the boundaries of the grid cells also have nice rounded coordinates.
 
 Lets look at a small piece of the Netherlands in the EU projection:
