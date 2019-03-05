@@ -1,0 +1,3 @@
+ProvincieNaam <- "Zeeland"
+Gems <- c("GM0654","GM0664","GM0677","GM0678","GM0687","GM1695","GM0703","GM1676","GM1714","GM0715","GM0716","GM0717","GM0718")
+RPAs <- c("RP24")
